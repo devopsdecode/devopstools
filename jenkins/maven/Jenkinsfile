@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+    tools {
+        maven 'maven'
+    }
+    stages {
+        stage("Clone Stage") {
+            steps {
+                git(
+                    branch: 'jenkins-ci-build',
+                    url: 'updatetherepository',
+                    credentialsId: 'PAT-GITHUB'
+                )
+            }
+        }
+        stage("compile") {
+            steps {
+                dir('laundry-service') {
+                    sh 'mvn compile'
+                }
+            }
+        }
+        stage("Test"){
+            steps {
+                dir('laundry-service'){
+                    sh 'mvn test'
+                }
+            }
+        }
+        stage("package"){
+            steps {
+                dir('laundry-service'){
+                    sh 'mvn package'
+                }
+            }
+        }        
+        stage('Push to nexus'){
+            steps{
+                script {
+                    def jarfile = 'laundry-service/target/LaundryApp-1.0-SNAPSHOT.jar'
+                    def nexusUrl = 'http://localhost:8081/repository/ci-maven-project/'
+                    def credentails = 'pleaseupdate:pleaseupdate'
+                    sh '''curl -u ${credentails} --upload-file ${jarfile} ${nexusUrl}qa/build-mv.jar'''
+                }
+
+            }
+        }
+    }
+}
